@@ -56,3 +56,4 @@ seedReport.json
 # source .zip + temp extraction (contents now live in /uploads, /design-system, /reference)
 /.extracted/
 /START Website.zip
+.env.production.local
