@@ -35,6 +35,24 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# payload
+/dist/
+/build/
+/public/media/
+public/robots.txt
+public/sitemap*.xml
+seedReport.json
+
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# editor
+.idea/
+.vscode/
+
 # source .zip + temp extraction (contents now live in /uploads, /design-system, /reference)
 /.extracted/
 /START Website.zip
