@@ -7,8 +7,10 @@ export async function POST(req: NextRequest) {
   if (!process.env.SEED_SECRET || token !== process.env.SEED_SECRET) {
     return new Response('Unauthorized', { status: 401 })
   }
+  const url = new URL(req.url)
+  const force = url.searchParams.get('force') ?? undefined
   try {
-    const report = await runSeed()
+    const report = await runSeed({ force })
     return Response.json(report)
   } catch (err: any) {
     return Response.json(

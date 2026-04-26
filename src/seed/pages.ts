@@ -40,6 +40,15 @@ function extractTitle(md: string, fallback: string): string {
 }
 
 export async function seedPages(payload: Payload, uploadsDir: string, report: any) {
+  // Resolve the Planning Session form ID once so any homepage formEmbed
+  // block on either locale can point at the right form record.
+  const planningSessionForm = await payload.find({
+    collection: 'forms',
+    where: { title: { equals: 'Planning Session' } },
+    limit: 1,
+  })
+  const planningSessionFormId = (planningSessionForm.docs[0] as any)?.id
+
   for (const m of MAPPING) {
     const full = path.join(uploadsDir, m.file)
     let raw: string
@@ -51,9 +60,16 @@ export async function seedPages(payload: Payload, uploadsDir: string, report: an
     }
     const { content, data: fm } = matter(raw)
     const title = (fm.title as string) || extractTitle(content, m.slug)
-    const layout = m.isHome
-      ? mapHomepage(content)
-      : [{ blockType: 'richText', content: mdToLexical(content), maxWidth: 'default' }]
+    let layout: any[]
+    if (m.isHome) {
+      layout = mapHomepage(content).map(b =>
+        b.blockType === 'formEmbed' && !b.form && planningSessionFormId
+          ? { ...b, form: planningSessionFormId }
+          : b,
+      )
+    } else {
+      layout = [{ blockType: 'richText', content: mdToLexical(content), maxWidth: 'default' }]
+    }
 
     const existing = await payload.find({
       collection: 'pages',
