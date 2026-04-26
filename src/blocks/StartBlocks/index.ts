@@ -1,0 +1,43 @@
+export { Hero } from './Hero/config'
+export { Marquee } from './Marquee/config'
+export { WhyBroker } from './WhyBroker/config'
+export { Offer } from './Offer/config'
+export { VersusTable } from './VersusTable/config'
+export { Process } from './Process/config'
+export { Calculator } from './Calculator/config'
+export { LoanProgramsList } from './LoanProgramsList/config'
+export { AudienceGrid } from './AudienceGrid/config'
+export { Testimonials } from './Testimonials/config'
+export { Guarantee } from './Guarantee/config'
+export { Founder } from './Founder/config'
+export { Bilingual } from './Bilingual/config'
+export { BlogTeasers } from './BlogTeasers/config'
+export { FaqList } from './FaqList/config'
+export { FinalCta } from './FinalCta/config'
+export { RichTextBlock } from './RichText/config'
+export { FormEmbed } from './FormEmbed/config'
+
+import { Hero } from './Hero/config'
+import { Marquee } from './Marquee/config'
+import { WhyBroker } from './WhyBroker/config'
+import { Offer } from './Offer/config'
+import { VersusTable } from './VersusTable/config'
+import { Process } from './Process/config'
+import { Calculator } from './Calculator/config'
+import { LoanProgramsList } from './LoanProgramsList/config'
+import { AudienceGrid } from './AudienceGrid/config'
+import { Testimonials } from './Testimonials/config'
+import { Guarantee } from './Guarantee/config'
+import { Founder } from './Founder/config'
+import { Bilingual } from './Bilingual/config'
+import { BlogTeasers } from './BlogTeasers/config'
+import { FaqList } from './FaqList/config'
+import { FinalCta } from './FinalCta/config'
+import { RichTextBlock } from './RichText/config'
+import { FormEmbed } from './FormEmbed/config'
+
+export const startBlocks = [
+  Hero, Marquee, WhyBroker, Offer, VersusTable, Process, Calculator,
+  LoanProgramsList, AudienceGrid, Testimonials, Guarantee, Founder,
+  Bilingual, BlogTeasers, FaqList, FinalCta, RichTextBlock, FormEmbed,
+]
