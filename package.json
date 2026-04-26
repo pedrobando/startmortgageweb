@@ -4,7 +4,6 @@
   "description": "START Mortgage — Payload v3 + Next.js 15 site",
   "license": "UNLICENSED",
   "private": true,
-  "type": "module",
   "scripts": {
     "build": "cross-env NODE_OPTIONS=--no-deprecation next build",
     "postbuild": "next-sitemap --config next-sitemap.config.cjs",
