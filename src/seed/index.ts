@@ -40,9 +40,15 @@ export async function runSeed() {
   }
 
   report.finishedAt = new Date().toISOString()
-  await fs.writeFile(
-    path.resolve(process.cwd(), 'seedReport.json'),
-    JSON.stringify(report, null, 2),
-  )
+  // Best-effort: write seedReport.json to the working dir locally; ignore
+  // failures (Vercel functions run on a read-only filesystem).
+  try {
+    await fs.writeFile(
+      path.resolve(process.cwd(), 'seedReport.json'),
+      JSON.stringify(report, null, 2),
+    )
+  } catch (err: any) {
+    if (err?.code !== 'EROFS') throw err
+  }
   return report
 }
