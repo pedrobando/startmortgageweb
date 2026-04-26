@@ -35,6 +35,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# extracted .zip working dir + the source artifact
+# source .zip + temp extraction (contents now live in /uploads, /design-system, /reference)
 /.extracted/
 /START Website.zip
