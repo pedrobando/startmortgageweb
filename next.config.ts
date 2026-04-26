@@ -19,9 +19,9 @@ const nextConfig: NextConfig = {
   },
   images: {
     localPatterns: [
-      {
-        pathname: '/api/media/file/**',
-      },
+      { pathname: '/api/media/file/**' },
+      { pathname: '/brand/**' },
+      { pathname: '/media/**' },
     ],
     qualities: [100],
     remotePatterns: [
