@@ -10,8 +10,6 @@ import { Providers } from '@/providers'
 import { InitTheme } from '@/providers/Theme/InitTheme'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import { draftMode } from 'next/headers'
-import { getPayload } from 'payload'
-import config from '@payload-config'
 
 import './globals.css'
 import { getServerSideURL } from '@/utilities/getURL'
@@ -25,25 +23,18 @@ const poppins = Poppins({
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const { isEnabled } = await draftMode()
-  const payload = await getPayload({ config })
-  const settings = await payload.findGlobal({ slug: 'site-settings' }).catch(() => null)
-  const accent = settings?.brand?.accentColor || '#83C340'
 
   return (
     <html className={cn(poppins.variable, GeistMono.variable)} lang="en" suppressHydrationWarning>
       <head>
         <InitTheme />
-        <style dangerouslySetInnerHTML={{ __html: `:root { --accent: ${accent}; }` }} />
+        <style dangerouslySetInnerHTML={{ __html: `:root { --accent: #83C340; }` }} />
         <link href="/favicon.ico" rel="icon" sizes="32x32" />
         <link href="/favicon.svg" rel="icon" type="image/svg+xml" />
       </head>
       <body className="font-sans antialiased">
         <Providers>
-          <AdminBar
-            adminBarProps={{
-              preview: isEnabled,
-            }}
-          />
+          <AdminBar adminBarProps={{ preview: isEnabled }} />
           {children}
         </Providers>
       </body>
