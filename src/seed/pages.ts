@@ -5,6 +5,7 @@ import matter from 'gray-matter'
 import type { Payload } from 'payload'
 import { mdToLexical } from './markdown'
 import { mapHomepage } from './homepage-blocks'
+import { sanitizeMarkdown } from './sanitize'
 
 type Mapping = {
   file: string
@@ -62,13 +63,15 @@ export async function seedPages(payload: Payload, uploadsDir: string, report: an
     const title = (fm.title as string) || extractTitle(content, m.slug)
     let layout: any[]
     if (m.isHome) {
+      // mapHomepage already filters down to the body-section group.
       layout = mapHomepage(content).map(b =>
         b.blockType === 'formEmbed' && !b.form && planningSessionFormId
           ? { ...b, form: planningSessionFormId }
           : b,
       )
     } else {
-      layout = [{ blockType: 'richText', content: mdToLexical(content), maxWidth: 'default' }]
+      const cleaned = sanitizeMarkdown(content)
+      layout = [{ blockType: 'richText', content: mdToLexical(cleaned), maxWidth: 'default' }]
     }
 
     const existing = await payload.find({

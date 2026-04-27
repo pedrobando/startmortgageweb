@@ -4,6 +4,7 @@ import fs from 'node:fs/promises'
 import matter from 'gray-matter'
 import type { Payload } from 'payload'
 import { mdToLexical, mdToPlain } from './markdown'
+import { sanitizeMarkdown } from './sanitize'
 
 const POSTS = [
   { file: 'blog-fha-vs-conventional.md',         slug: 'fha-vs-conventional' },
@@ -29,10 +30,11 @@ export async function seedPosts(payload: Payload, uploadsDir: string, report: an
       continue
     }
     const { content, data: fm } = matter(raw)
-    const title = (fm.title as string) || extractTitle(content, p.slug)
+    const cleaned = sanitizeMarkdown(content)
+    const title = (fm.title as string) || extractTitle(cleaned, p.slug)
     const excerpt =
       (fm.excerpt as string) ||
-      mdToPlain(content).split('\n').filter(Boolean).slice(1, 4).join(' ').slice(0, 240)
+      mdToPlain(cleaned).split('\n').filter(Boolean).slice(1, 4).join(' ').slice(0, 240)
 
     const existing = await payload.find({
       collection: 'posts',
@@ -50,7 +52,7 @@ export async function seedPosts(payload: Payload, uploadsDir: string, report: an
       data: {
         title,
         slug: p.slug,
-        content: mdToLexical(content) as any,
+        content: mdToLexical(cleaned) as any,
         meta: { description: excerpt } as any,
         _status: 'published',
         publishedAt: new Date().toISOString(),

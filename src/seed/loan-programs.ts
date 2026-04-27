@@ -4,6 +4,7 @@ import fs from 'node:fs/promises'
 import matter from 'gray-matter'
 import type { Payload } from 'payload'
 import { mdToLexical } from './markdown'
+import { sanitizeMarkdown } from './sanitize'
 
 const PROGRAMS = [
   { file: 'loan-programs-conventional.md', slug: 'conventional', name: 'Conventional', iconKey: 'home' },
@@ -23,12 +24,13 @@ export async function seedLoanPrograms(payload: Payload, uploadsDir: string, rep
       continue
     }
     const { content } = matter(raw)
-    const taglineMatch = content.match(/^>\s*(.*)/m)
+    const cleaned = sanitizeMarkdown(content)
+    const taglineMatch = cleaned.match(/^>\s*(.*)/m)
     const tagline = taglineMatch ? taglineMatch[1].slice(0, 140) : ''
-    const pros = (content.match(/^[-*]\s+✓?\s*(.*)$/gm) ?? [])
+    const pros = (cleaned.match(/^[-*]\s+✓?\s*(.*)$/gm) ?? [])
       .slice(0, 6)
       .map(s => ({ item: s.replace(/^[-*]\s+✓?\s*/, '').trim() }))
-    const cons = (content.match(/^[-*]\s+(?:✗|❌|–|—)\s*(.*)$/gm) ?? [])
+    const cons = (cleaned.match(/^[-*]\s+(?:✗|❌|–|—)\s*(.*)$/gm) ?? [])
       .slice(0, 6)
       .map(s => ({ item: s.replace(/^[-*]\s+(?:✗|❌|–|—)\s*/, '').trim() }))
 
@@ -49,7 +51,7 @@ export async function seedLoanPrograms(payload: Payload, uploadsDir: string, rep
         name: p.name,
         slug: p.slug,
         tagline,
-        requirements: mdToLexical(content) as any,
+        requirements: mdToLexical(cleaned) as any,
         pros,
         cons,
         iconKey: p.iconKey,
