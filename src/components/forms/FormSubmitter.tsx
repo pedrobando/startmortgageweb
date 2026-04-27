@@ -38,51 +38,74 @@ export function FormSubmitter({ form }: { form: FormDoc | null | undefined }) {
 
   if (state === 'ok') {
     return (
-      <div className="p-4 bg-[#E8F4D8] text-emerald-900 rounded-xl">
-        Thanks! We&rsquo;ll be in touch.
+      <div className="border-l-2 border-[var(--color-leaf)] bg-[var(--color-leaf-tint)] px-6 py-7">
+        <div className="font-mono text-[0.7rem] uppercase tracking-[0.15em] text-[var(--color-leaf-deep)]">
+          ★ Received
+        </div>
+        <p className="mt-3 font-display italic text-[1.3rem] leading-[1.4] text-[var(--color-ink)]">
+          Thanks — we&rsquo;ll reach out within 24 hours.
+        </p>
       </div>
     )
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
+    <form onSubmit={onSubmit} className="space-y-7">
       {(form.fields ?? []).map((f: any) => {
         const required = !!f.required
-        const baseInput = 'w-full rounded-xl border border-zinc-200 p-3 focus:border-[var(--accent)] outline-none'
         return (
           <div key={f.id ?? f.name}>
-            <label className="block text-sm font-medium mb-1">
+            <label htmlFor={f.name} className="kicker block">
               {f.label}
-              {required && <span className="text-red-500"> *</span>}
+              {required && <span className="ml-1 text-[var(--color-coral)]">*</span>}
             </label>
             {f.blockType === 'textarea' || f.blockType === 'message' ? (
-              <textarea name={f.name} required={required} rows={5} className={baseInput} />
+              <textarea
+                id={f.name}
+                name={f.name}
+                required={required}
+                rows={4}
+                className="field-line resize-none"
+              />
             ) : f.blockType === 'select' ? (
-              <select name={f.name} required={required} defaultValue="" className={baseInput}>
-                <option value="">--</option>
+              <select
+                id={f.name}
+                name={f.name}
+                required={required}
+                defaultValue=""
+                className="field-line cursor-pointer"
+              >
+                <option value="">Choose one</option>
                 {(f.options ?? []).map((o: any) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
             ) : (
               <input
+                id={f.name}
                 name={f.name}
                 type={f.blockType === 'email' ? 'email' : f.blockType === 'number' ? 'number' : 'text'}
                 required={required}
-                className={baseInput}
+                className="field-line"
               />
             )}
           </div>
         )
       })}
-      <button
-        type="submit"
-        disabled={state === 'submitting'}
-        className="bg-[var(--accent)] hover:opacity-90 text-white font-semibold rounded-full px-6 py-3 disabled:opacity-60"
-      >
-        {state === 'submitting' ? '...' : (form.submitButtonLabel ?? 'Submit')}
-      </button>
-      {error && <div className="text-red-600 text-sm">{error}</div>}
+      <div className="pt-4">
+        <button
+          type="submit"
+          disabled={state === 'submitting'}
+          className="action-link disabled:opacity-50"
+        >
+          {state === 'submitting' ? 'Sending…' : (form.submitButtonLabel ?? 'Send')}
+        </button>
+      </div>
+      {error && (
+        <div className="font-mono text-[0.7rem] uppercase tracking-[0.12em] text-[var(--color-coral)]">
+          ★ {error}
+        </div>
+      )}
     </form>
   )
 }

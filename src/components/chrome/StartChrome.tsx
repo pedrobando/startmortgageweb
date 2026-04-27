@@ -1,53 +1,78 @@
 import Link from 'next/link'
-import Image from 'next/image'
 import type { Locale } from '@/lib/locale'
 
 type Header = any
 type Footer = any
 type Settings = any
 
-export function StartTopbar({ header, settings, locale }: { header: Header; settings: Settings; locale: Locale }) {
+/* ---------- Topbar — thin masthead ---------- */
+
+export function StartTopbar({
+  header,
+  settings,
+  locale,
+}: {
+  header: Header
+  settings: Settings
+  locale: Locale
+}) {
   const other = locale === 'en' ? 'es' : 'en'
   return (
-    <div className="bg-zinc-900 text-white text-xs">
-      <div className="mx-auto max-w-7xl px-4 py-2 flex items-center justify-between gap-4">
+    <div className="border-b border-[var(--color-hairline)]">
+      <div className="container flex items-center justify-between gap-4 py-2.5 font-mono text-[0.68rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">
         <a
-          href={header?.utility?.phoneHref || `tel:${settings?.business?.phoneE164 || '+16892103448'}`}
-          className="flex items-center gap-2 hover:text-[var(--accent)]"
+          href={`tel:${settings?.business?.phoneE164 || '+16892103448'}`}
+          className="link-underline tabular-nums"
         >
-          <span aria-hidden>📞</span>
-          <span>{header?.utility?.phoneLabel || 'Call us'}</span>
-          <span className="font-medium">{settings?.business?.phone || '(689) 210-3448'}</span>
-        </a>
-        <div className="flex items-center gap-4">
-          <span className="hidden md:inline">{header?.utility?.languageBadge || 'Hablo Español'}</span>
-          <span className="hidden sm:inline opacity-70">
-            NMLS# {settings?.business?.nmls?.broker || '2821608'}
+          {header?.utility?.phoneLabel || 'Call'}
+          <span className="mx-1.5 text-[var(--color-leaf-deep)]">·</span>
+          <span className="font-medium normal-case tracking-normal">
+            {settings?.business?.phone || '(689) 210-3448'}
           </span>
-          <Link href={`/${other}`} className="font-semibold hover:text-[var(--accent)]">
-            {other.toUpperCase()}
-          </Link>
+        </a>
+        <div className="hidden items-center gap-5 md:flex">
+          <span className="flex items-center gap-1.5">
+            <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--color-leaf)]" />
+            {header?.utility?.languageBadge || 'Hablo Español'}
+          </span>
+          <span className="text-[var(--color-ink-mute)]">
+            NMLS {settings?.business?.nmls?.broker || '2821608'}
+          </span>
         </div>
+        <Link href={`/${other}`} className="link-underline">
+          <span className="text-[var(--color-leaf-deep)]">{other === 'es' ? 'En español' : 'In English'}</span>
+        </Link>
       </div>
     </div>
   )
 }
 
+/* ---------- Nav — wordmark + center links + italic CTA ---------- */
+
 export function StartNav({ header, locale }: { header: Header; locale: Locale }) {
   const items: any[] = header?.navItems ?? defaultNav(locale)
-  const cta = header?.cta ?? { label: locale === 'es' ? 'Reserva tu sesión' : 'Book Planning Session', href: '/planning-session' }
+  const cta =
+    header?.cta ?? {
+      label: locale === 'es' ? 'Reserva una sesión' : 'Book a planning session',
+      href: '/planning-session',
+    }
   return (
-    <nav className="bg-white border-b border-zinc-200">
-      <div className="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between gap-6">
-        <Link href={`/${locale}`} className="flex items-center gap-2">
-          <Image src="/brand/logo-wordmark-black.png" alt="START Mortgage" width={160} height={40} priority />
+    <nav className="border-b border-[var(--color-hairline)] bg-[var(--color-paper)]/80 backdrop-blur-[2px]">
+      <div className="container grid grid-cols-[auto_1fr_auto] items-center gap-8 py-5">
+        <Link href={`/${locale}`} className="flex items-baseline gap-2">
+          <span className="font-display text-[1.45rem] tracking-[-0.02em] font-medium leading-none">
+            START
+          </span>
+          <span className="font-display italic text-[1.05rem] text-[var(--color-leaf-deep)] leading-none">
+            mortgage
+          </span>
         </Link>
-        <ul className="hidden md:flex items-center gap-8">
+        <ul className="hidden items-center justify-center gap-7 lg:flex">
           {items.map((it: any, i: number) => (
             <li key={i}>
               <Link
                 href={it.href ? `/${locale}${it.href}` : '#'}
-                className="text-sm font-medium hover:text-[var(--accent)]"
+                className="link-leaf font-sans text-[0.92rem] tracking-[0.005em] text-[var(--color-ink)]"
               >
                 {it.label}
               </Link>
@@ -57,9 +82,13 @@ export function StartNav({ header, locale }: { header: Header; locale: Locale })
         {cta?.label && (
           <Link
             href={`/${locale}${cta.href || '/planning-session'}`}
-            className="hidden md:inline-flex items-center gap-2 bg-[var(--accent)] hover:opacity-90 text-white font-semibold rounded-full px-5 py-2.5 text-sm"
+            className="hidden items-baseline gap-2 font-display italic text-[1rem] text-[var(--color-ink)] transition-colors hover:text-[var(--color-leaf-deep)] md:inline-flex"
           >
-            {cta.label}
+            <span className="not-italic font-mono text-[0.65rem] uppercase tracking-[0.2em] text-[var(--color-leaf-deep)]">
+              No.
+            </span>
+            <span>{cta.label}</span>
+            <span className="not-italic font-sans">→</span>
           </Link>
         )}
       </div>
@@ -67,43 +96,97 @@ export function StartNav({ header, locale }: { header: Header; locale: Locale })
   )
 }
 
+/* ---------- Footer ---------- */
+
 export function StartFooter({ footer, settings }: { footer: Footer; settings: Settings }) {
-  const cols = footer?.columns ?? []
+  const cols = footer?.columns ?? defaultFooterColumns()
+  const broker = settings?.business?.nmls?.broker || '2821608'
+  const parent = settings?.business?.nmls?.parent || '2718409'
+  const founder = settings?.business?.founderBio?.name || 'Jexayra Rivera'
+  const founderNmls = settings?.business?.nmls?.founder || '1631454'
   return (
-    <footer className="bg-zinc-900 text-white">
-      <div className="mx-auto max-w-7xl px-4 py-14 grid gap-10 md:grid-cols-4">
-        <div className="space-y-4">
-          <Image src="/brand/logo-wordmark-white.png" alt="START Mortgage" width={160} height={40} />
-          <p className="text-sm opacity-80">Boutique bilingual mortgage brokerage. Central Florida.</p>
-          <p className="text-xs opacity-60">
-            {footer?.disclosure ||
-              `Lend Labs LLC dba START Mortgage NMLS# ${settings?.business?.nmls?.broker || '2821608'}. Equal Housing Opportunity.`}
-          </p>
-        </div>
-        {cols.map((col: any, i: number) => (
-          <div key={i}>
-            <div className="font-semibold mb-3">{col.heading}</div>
-            <ul className="space-y-2 text-sm">
-              {(col.links ?? []).map((l: any, j: number) => (
-                <li key={j}>
-                  <Link href={l.href} className="opacity-80 hover:opacity-100 hover:text-[var(--accent)]">
-                    {l.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+    <footer className="mt-24 border-t border-[var(--color-hairline)] bg-[var(--color-paper-deep)]">
+      <div className="container py-16">
+        <div className="grid items-end gap-10 md:grid-cols-[1.1fr_auto] md:gap-16">
+          <div>
+            <h2
+              className="numeral text-[clamp(3rem,9vw,7rem)] leading-[0.85] tracking-[-0.04em]"
+              style={{ fontWeight: 300 }}
+            >
+              START
+              <span className="italic text-[var(--color-leaf-deep)]"> mortgage.</span>
+            </h2>
+            <p className="kicker mt-4">
+              <span className="text-[var(--color-leaf-deep)]">★</span>
+              <span className="ml-3">Boutique bilingual broker</span>
+              <span className="mx-3 text-[var(--color-ink-mute)]">·</span>
+              <span>Kissimmee, Florida</span>
+            </p>
           </div>
-        ))}
-      </div>
-      <div className="border-t border-white/10 text-xs opacity-60">
-        <div className="mx-auto max-w-7xl px-4 py-4 flex flex-col md:flex-row gap-2 md:items-center md:justify-between">
-          <span>© {new Date().getFullYear()} START Mortgage.</span>
-          <span>All rights reserved.</span>
+          <div className="text-right font-mono text-xs leading-relaxed tracking-[0.02em] text-[var(--color-ink-soft)]">
+            <div>{settings?.business?.address?.street || '112 N Clyde Ave'}</div>
+            <div>
+              {settings?.business?.address?.city || 'Kissimmee'},{' '}
+              {settings?.business?.address?.region || 'FL'}{' '}
+              {settings?.business?.address?.postalCode || '34741'}
+            </div>
+            <a
+              href={`tel:${settings?.business?.phoneE164 || '+16892103448'}`}
+              className="link-underline mt-2 inline-block tabular-nums"
+            >
+              {settings?.business?.phone || '(689) 210-3448'}
+            </a>
+            <div className="mt-1">
+              <a
+                href={`mailto:${settings?.business?.email || 'hello@startmortgage.com'}`}
+                className="link-underline"
+              >
+                {settings?.business?.email || 'hello@startmortgage.com'}
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <hr className="rule mt-12" />
+
+        <div className="mt-10 grid gap-10 md:grid-cols-4">
+          {cols.map((col: any, i: number) => (
+            <div key={i}>
+              <div className="kicker">{col.heading}</div>
+              <ul className="mt-4 space-y-2.5">
+                {(col.links ?? []).map((l: any, j: number) => (
+                  <li key={j}>
+                    <Link
+                      href={l.href}
+                      className="link-leaf font-display italic text-[1.05rem] text-[var(--color-ink)]"
+                    >
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        <hr className="rule mt-14" />
+
+        <div className="mt-6 flex flex-col-reverse items-start justify-between gap-4 md:flex-row md:items-end">
+          <p className="max-w-2xl font-mono text-[0.7rem] leading-relaxed text-[var(--color-ink-mute)]">
+            Lend Labs LLC dba START Mortgage. NMLS {parent} / {broker}.
+            Founder {founder} NMLS {founderNmls}.
+            Equal Housing Opportunity. © {new Date().getFullYear()}.
+          </p>
+          <p className="font-display italic text-sm text-[var(--color-leaf-deep)]">
+            The start of more.
+          </p>
         </div>
       </div>
     </footer>
   )
 }
+
+/* ---------- StickyBar ---------- */
 
 export function StartStickyBar({
   settings,
@@ -114,19 +197,24 @@ export function StartStickyBar({
 }) {
   if (settings?.toggles?.showStickyBar === false) return null
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 md:hidden bg-white border-t border-zinc-200 p-3 flex gap-2">
-      <a
-        href={`tel:${settings?.business?.phoneE164 || '+16892103448'}`}
-        className="flex-1 text-center bg-zinc-100 rounded-full py-3 font-medium"
-      >
-        {settings?.business?.phone || '(689) 210-3448'}
-      </a>
-      <Link
-        href={`/${locale}/planning-session`}
-        className="flex-1 text-center bg-[var(--accent)] text-white rounded-full py-3 font-semibold"
-      >
-        {locale === 'es' ? 'Reserva' : 'Book'}
-      </Link>
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--color-hairline)] bg-[var(--color-paper)]/95 backdrop-blur-md md:hidden">
+      <div className="container flex items-center justify-between gap-3 py-3">
+        <a
+          href={`tel:${settings?.business?.phoneE164 || '+16892103448'}`}
+          className="font-mono text-[0.65rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]"
+        >
+          Call <span className="text-[var(--color-leaf-deep)]">·</span>{' '}
+          <span className="font-medium normal-case tracking-normal">
+            {settings?.business?.phone || '(689) 210-3448'}
+          </span>
+        </a>
+        <Link
+          href={`/${locale}/planning-session`}
+          className="font-display italic text-[0.95rem] text-[var(--color-ink)]"
+        >
+          {locale === 'es' ? 'Reserva' : 'Book'} →
+        </Link>
+      </div>
     </div>
   )
 }
@@ -145,4 +233,43 @@ function defaultNav(locale: Locale) {
         { label: 'About', href: '/about' },
         { label: 'Contact', href: '/contact' },
       ]
+}
+
+function defaultFooterColumns() {
+  return [
+    {
+      heading: 'Get started',
+      links: [
+        { label: 'Book a planning session', href: '/en/planning-session' },
+        { label: 'Get pre-approved', href: '/en/pre-approval' },
+        { label: 'How it works', href: '/en/how-it-works' },
+      ],
+    },
+    {
+      heading: 'Loan programs',
+      links: [
+        { label: 'Conventional', href: '/en/loan-programs/conventional' },
+        { label: 'FHA', href: '/en/loan-programs/fha' },
+        { label: 'VA', href: '/en/loan-programs/va' },
+        { label: 'USDA', href: '/en/loan-programs/usda' },
+      ],
+    },
+    {
+      heading: 'About',
+      links: [
+        { label: 'Meet Jexayra', href: '/en/about' },
+        { label: 'Reviews', href: '/en/reviews' },
+        { label: 'Contact', href: '/en/contact' },
+        { label: 'Realtor partners', href: '/en/realtors' },
+      ],
+    },
+    {
+      heading: 'En español',
+      links: [
+        { label: 'Inicio', href: '/es' },
+        { label: 'Cómo funciona', href: '/es/como-funciona' },
+        { label: 'Sesión de planificación', href: '/es/sesion-de-planificacion' },
+      ],
+    },
+  ]
 }

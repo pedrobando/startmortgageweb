@@ -30,39 +30,67 @@ export function CalculatorBlockClient({ defaults }: { defaults?: Partial<Default
   const fmt = (n: number) =>
     n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 
-  const fields: Array<{ k: keyof Defaults; label: string; step: number }> = [
-    { k: 'price', label: 'Home price', step: 1000 },
-    { k: 'downPct', label: 'Down payment %', step: 0.5 },
-    { k: 'ratePct', label: 'Interest rate %', step: 0.125 },
-    { k: 'termYears', label: 'Term (years)', step: 5 },
-    { k: 'taxesAnnual', label: 'Annual taxes', step: 100 },
-    { k: 'insuranceAnnual', label: 'Annual insurance', step: 100 },
+  const fields: Array<{ k: keyof Defaults; label: string; step: number; suffix?: string }> = [
+    { k: 'price', label: 'Home price', step: 1000, suffix: '$' },
+    { k: 'downPct', label: 'Down payment', step: 0.5, suffix: '%' },
+    { k: 'ratePct', label: 'Interest rate', step: 0.125, suffix: '%' },
+    { k: 'termYears', label: 'Term', step: 5, suffix: 'yr' },
+    { k: 'taxesAnnual', label: 'Annual taxes', step: 100, suffix: '$' },
+    { k: 'insuranceAnnual', label: 'Annual insurance', step: 100, suffix: '$' },
   ]
 
   return (
-    <div className="bg-white rounded-2xl border border-zinc-200 p-6 grid gap-6 md:grid-cols-2">
-      <div className="space-y-4">
-        {fields.map(f => (
-          <label key={f.k} className="block">
-            <span className="text-sm font-medium">{f.label}</span>
-            <input
-              type="number"
-              step={f.step}
-              value={s[f.k]}
-              onChange={e => setS({ ...s, [f.k]: Number(e.target.value) })}
-              className="mt-1 w-full rounded-xl border border-zinc-200 p-3 focus:border-[var(--accent)] outline-none"
-            />
-          </label>
-        ))}
-      </div>
-      <div className="bg-zinc-50 rounded-2xl p-6 self-start">
-        <div className="text-sm text-zinc-600">Estimated monthly payment</div>
-        <div className="text-4xl font-bold mt-1">{fmt(total)}</div>
-        <div className="mt-2 text-sm text-zinc-600">
-          P&amp;I: {fmt(pi)} • Taxes: {fmt(s.taxesAnnual / 12)} • Insurance: {fmt(s.insuranceAnnual / 12)}
+    <div className="grid gap-12 md:grid-cols-12">
+      <div className="space-y-7 md:col-span-7">
+        <div className="kicker">Inputs</div>
+        <hr className="rule" />
+        <div className="grid grid-cols-2 gap-x-8 gap-y-6">
+          {fields.map(f => (
+            <label key={f.k} className="block">
+              <span className="kicker block">{f.label}</span>
+              <div className="mt-1 flex items-baseline gap-2 border-b border-[var(--color-hairline)] pb-2 transition-colors focus-within:border-[var(--color-leaf)]">
+                {f.suffix === '$' && (
+                  <span className="font-display italic text-[var(--color-ink-mute)]">$</span>
+                )}
+                <input
+                  type="number"
+                  step={f.step}
+                  value={s[f.k]}
+                  onChange={e => setS({ ...s, [f.k]: Number(e.target.value) })}
+                  className="numeral w-full bg-transparent text-2xl tabular-nums text-[var(--color-ink)] outline-none"
+                  style={{ fontWeight: 400 }}
+                />
+                {f.suffix && f.suffix !== '$' && (
+                  <span className="font-display italic text-[var(--color-ink-mute)]">{f.suffix}</span>
+                )}
+              </div>
+            </label>
+          ))}
         </div>
-        <div className="mt-4 text-xs text-zinc-500">
-          Estimate only. Final terms depend on credit, lender, and property.
+      </div>
+
+      <div className="md:col-span-5">
+        <div className="border border-[var(--color-hairline)] bg-[var(--color-paper)] p-8">
+          <div className="kicker kicker--leaf">Estimated monthly</div>
+          <div className="numeral mt-3 text-[clamp(3rem,7vw,5rem)] tabular-nums">{fmt(total)}</div>
+          <hr className="rule mt-6" />
+          <dl className="mt-6 space-y-3 font-mono text-[0.72rem] uppercase tracking-[0.15em] text-[var(--color-ink-soft)]">
+            <div className="flex justify-between">
+              <dt>P&amp;I</dt>
+              <dd className="tabular-nums normal-case tracking-normal">{fmt(pi)}</dd>
+            </div>
+            <div className="flex justify-between">
+              <dt>Taxes / mo</dt>
+              <dd className="tabular-nums normal-case tracking-normal">{fmt(s.taxesAnnual / 12)}</dd>
+            </div>
+            <div className="flex justify-between">
+              <dt>Insurance / mo</dt>
+              <dd className="tabular-nums normal-case tracking-normal">{fmt(s.insuranceAnnual / 12)}</dd>
+            </div>
+          </dl>
+          <p className="mt-8 font-mono text-[0.65rem] leading-relaxed text-[var(--color-ink-mute)]">
+            Estimate only. Final terms depend on credit, lender, and property.
+          </p>
         </div>
       </div>
     </div>
