@@ -1,18 +1,25 @@
 import { mdToLexical } from './markdown'
 import { sanitizeMarkdown } from './sanitize'
+import {
+  extractFields,
+  extractCards,
+  fieldText,
+  fieldMarkdown,
+  fieldCta,
+  fieldBullets,
+  parseTable,
+} from './copy-extract'
 
 type Section = { heading: string; body: string; level: number }
 
 /**
- * uploads/homepage.md and uploads/es-inicio.md are authoring spec docs,
- * not final user-facing copy. Top-level h2s in those files are SEO /
- * schema / linking-map sections that must not render. The actual page
- * content lives under one specific h2 group whose body is a list of h3s
- * named "SECTION N: <intent>" / "SECCION N: <intent>".
- *
- * The mapper below ONLY consumes those h3s; every other h2 in the file
- * is treated as authoring metadata and discarded.
+ * Pulls user-facing copy out of the labeled-section format used in
+ * uploads/homepage.md and uploads/es-inicio.md and turns each section
+ * into a Payload block. The seed source is a copy deck — not a build
+ * spec — so the job here is to lift the actual headlines, body
+ * paragraphs, bullets, and CTAs into the right block fields.
  */
+
 const SECTION_GROUP_RE = /section[\s-]*by[\s-]*section/i
 const SECTION_RE = /^(?:section|secci[óo]n)\s*\d+\s*[:\-]\s*(.+)$/i
 
@@ -35,22 +42,6 @@ function parseSections(md: string): Section[] {
   }
   if (current) all.push(current)
   return all
-}
-
-function bullets(body: string): string[] {
-  return (body.match(/^[-*]\s+(.*)$/gm) ?? []).map(s => s.replace(/^[-*]\s+/, ''))
-}
-
-function firstSentences(body: string, n = 2): string {
-  return body
-    .replace(/^[-*].*\n?/gm, '')
-    .split(/\n{2,}/)
-    .filter(Boolean)
-    .slice(0, n)
-    .join(' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 280)
 }
 
 function classifyIntent(name: string): string {
@@ -76,115 +67,214 @@ function classifyIntent(name: string): string {
   return 'richText'
 }
 
-/* ---- block builders -------------------------------------------------- */
+/* ---- block builders ---- */
 
-function toHero(sec: Section) {
+function toHero(sec: Section, allSections: Section[]) {
+  const f = extractFields(sec.body)
+  const headline = fieldText(f, 'h1', 'h2', 'h1 (heading)') || 'The start of more.'
+  const subheadline = fieldText(f, 'subheadline', 'subhead', 'subheadline (text editor)')
+  const primary = fieldCta(f, 'primary cta', 'primary cta (button)', 'cta button')
+  const secondary = fieldCta(f, 'secondary cta', 'secondary cta (text link below button)')
+
+  // Trust bar / Statistics live as a markdown table either inside this
+  // section's "Trust Bar" body or as a sibling "Statistics" section.
+  const trustBarBody = (f['trust bar (below hero — replaces inviz client logo bar)']
+    ?? f['trust bar']
+    ?? f['trust bar (below hero)']
+    ?? []).join('\n')
+  let proofPoints: { value: string; label: string }[] = []
+  const trustTable = parseTable(trustBarBody) ?? findStatsTable(allSections)
+  if (trustTable && trustTable.rows.length) {
+    proofPoints = trustTable.rows
+      .map(r => ({ value: (r[0] ?? '').trim(), label: (r[1] ?? '').trim() }))
+      .filter(p => p.value && p.label)
+  }
+
   return {
     blockType: 'hero',
     eyebrow: 'START Mortgage',
-    headline: 'The start of more.',
-    subheadline: firstSentences(sec.body, 2) || 'Boutique bilingual mortgage guidance for Central Florida families. 24-hour pre-approvals.',
-    primaryCta: { label: 'Get pre-approved', href: '/pre-approval' },
-    secondaryCta: { label: 'How it works', href: '/how-it-works' },
-    proofPoints: [
-      { value: '24h', label: 'pre-approval' },
-      { value: '30+', label: 'lenders' },
-      { value: 'EN/ES', label: 'bilingual' },
-    ],
+    headline,
+    subheadline,
+    primaryCta: primary ? { label: primary.label, href: primary.href } : undefined,
+    secondaryCta: secondary ? { label: secondary.label, href: secondary.href } : undefined,
+    proofPoints,
   }
 }
 
+function findStatsTable(all: Section[]) {
+  const stats = all.find(s => /statistic|counter|estad[ií]stica/i.test(s.heading))
+  if (!stats) return null
+  return parseTable(stats.body)
+}
+
 function toWhyBroker(sec: Section) {
-  const items = bullets(sec.body).slice(0, 6).map(b => {
-    const [t, ...rest] = b.split(':')
-    return {
-      iconKey: 'badge-check',
-      title: (t || '').trim(),
-      body: rest.join(':').trim() || (t || '').trim(),
-    }
-  })
+  const f = extractFields(sec.body)
+  const eyebrow = fieldText(f, 'section tag', 'section tag (small text above heading)')
+  const title = fieldText(f, 'h2', 'h1') || 'Why a broker, not a bank'
+  const intro = fieldMarkdown(f, 'body copy', 'body')
+  const cards = extractCards(sec.body)
+  const points = cards
+    .map(c => ({
+      iconKey: pickIcon(fieldText(c, 'icon')),
+      title: fieldText(c, 'h3', 'h2', 'card title'),
+      body: fieldText(c, 'body', 'card body'),
+    }))
+    .filter(p => p.title || p.body)
+
   return {
     blockType: 'whyBroker',
-    title: 'Why a broker, not a bank',
-    intro: mdToLexical(firstSentences(sec.body, 2) || 'A broker shops 30+ wholesale lenders. A bank sells you the loan it has.'),
-    points: items.length
-      ? items
+    title: eyebrow ? `${eyebrow} — ${title}` : title,
+    intro: intro ? mdToLexical(intro) : undefined,
+    points: points.length
+      ? points
       : [
-          { iconKey: 'scale', title: '30+ lenders', body: 'We rate-shop wholesale partners on every file.' },
+          { iconKey: 'scale', title: 'Multiple lenders', body: 'We rate-shop on every file.' },
           { iconKey: 'clock', title: '24-hour pre-approval', body: 'Most pre-approvals out within 24 hours of complete intake.' },
-          { iconKey: 'handshake', title: 'One person, intake to close', body: 'No hand-offs. Same broker from first call to keys.' },
+          { iconKey: 'handshake', title: 'One person, intake to close', body: 'Same broker from first call to keys.' },
         ],
   }
 }
 
+function pickIcon(name: string): string {
+  const n = (name || '').toLowerCase()
+  if (/chat|biling|globe|language/.test(n)) return 'globe'
+  if (/shield|check|badge/.test(n)) return 'shield-check'
+  if (/clock|communica/.test(n)) return 'clock'
+  if (/scale|rate|shop/.test(n)) return 'scale'
+  if (/wallet|money|cost/.test(n)) return 'wallet'
+  if (/handshake|partner/.test(n)) return 'handshake'
+  if (/heart|family/.test(n)) return 'heart'
+  if (/home|house/.test(n)) return 'home'
+  if (/flag|veteran|military/.test(n)) return 'flag'
+  if (/briefcase|work|self/.test(n)) return 'briefcase'
+  if (/users|people|team/.test(n)) return 'users'
+  if (/sparkle|star/.test(n)) return 'sparkles'
+  return 'badge-check'
+}
+
 function toFounder(sec: Section) {
+  const f = extractFields(sec.body)
+  const eyebrow = fieldText(f, 'section tag', 'section tag (small text above heading)')
+  const headline = fieldText(f, 'h2', 'h1') || 'Meet your guide'
+  const bio = fieldMarkdown(f, 'body copy', 'body')
+  const bullets = fieldBullets(f, 'bullet points', 'bullets')
+  const cta = fieldCta(f, 'cta button', 'primary cta', 'cta')
   return {
     blockType: 'founder',
-    headline: 'Meet Jexayra',
-    bio: mdToLexical(sec.body.trim() || 'Jexayra Rivera, founder and broker — bilingual, with a decade of guiding Central Florida families to the right loan.'),
+    headline: eyebrow && eyebrow.length < 40 ? `${eyebrow} — ${headline}` : headline,
+    bio: bio ? mdToLexical(bio) : undefined,
     nmls: '1631454',
-    credentials: [
-      { text: 'Bilingual EN/ES' },
-      { text: 'Central Florida specialist' },
-      { text: '30+ wholesale lender access' },
-    ],
+    credentials: bullets.map(t => ({ text: t })),
+    // headline + cta are not separate fields on the Founder block but
+    // we keep the cta-bearing CTA for reference; the page's finalCta
+    // block already covers that role.
+    _ctaHint: cta,
   }
 }
 
 function toLoanProgramsList(sec: Section) {
+  const f = extractFields(sec.body)
+  const eyebrow = fieldText(f, 'section tag')
+  const title = fieldText(f, 'h2', 'h1') || 'Loan programs'
+  const intro = fieldText(f, 'body copy', 'body')
+
+  // The 4 programs are listed as a pipe-table with columns:
+  //   Card Title | Card Body | Link
+  const t = parseTable(sec.body)
+  // We don't inline the programs into the block (the renderer queries
+  // the loan-programs collection); the table here just confirms the
+  // ordering — collection-driven render is fine.
+  void t
+
   return {
     blockType: 'loanProgramsList',
-    title: 'Loan programs',
-    intro: firstSentences(sec.body, 1) || 'Conventional, FHA, VA, USDA — pick the one that fits your situation.',
+    title: eyebrow && eyebrow.length < 40 ? `${eyebrow} — ${title}` : title,
+    intro,
   }
 }
 
-function toFormEmbed() {
+function toFormEmbed(sec: Section) {
+  const f = extractFields(sec.body)
+  const headline = fieldText(f, 'h2', 'h1') || 'Ready to take the first step?'
+  const intro = fieldText(f, 'body copy', 'body')
   return {
     blockType: 'formEmbed',
-    headline: 'Book your planning session',
-    intro: "Tell us a little about your goals — we'll reach out within 24 hours.",
+    headline,
+    intro,
     form: undefined as any,
   }
 }
 
-function toAudience(_sec: Section) {
-  return {
-    blockType: 'audienceGrid',
-    title: 'Who we work with',
-    audiences: [
-      { iconKey: 'home', label: 'First-time buyers', body: 'Down payment, credit, paperwork — handled.', href: '/first-time-buyers' },
-      { iconKey: 'briefcase', label: 'Self-employed', body: 'Bank-statement, 1099, P&L, asset-depletion programs.', href: '/loan-programs' },
-      { iconKey: 'flag', label: 'Veterans', body: 'VA loans with no down payment.', href: '/loan-programs/va' },
-      { iconKey: 'users', label: 'Realtor partners', body: "Pre-approvals your buyers will close on.", href: '/realtors' },
-    ],
+function toAudience(sec: Section) {
+  const t = parseTable(sec.body)
+  if (!t || !t.rows.length) {
+    return {
+      blockType: 'audienceGrid',
+      title: 'Whatever your situation, there is a path forward',
+      audiences: [
+        { iconKey: 'home', label: 'First-time buyers', body: '', href: '/first-time-buyers' },
+        { iconKey: 'briefcase', label: 'Self-employed', body: '', href: '/loan-programs' },
+        { iconKey: 'flag', label: 'Veterans', body: '', href: '/loan-programs/va' },
+        { iconKey: 'users', label: 'Realtor partners', body: '', href: '/realtors' },
+      ],
+    }
   }
+  const f = extractFields(sec.body)
+  const title = fieldText(f, 'h2', 'h1') || 'Whatever your situation, there is a path forward'
+  // Header order: Card Title | Card Subtitle | Card Body | Link
+  // Sometimes the "Subtitle" column is missing.
+  const audiences = t.rows.map(r => {
+    const [titleCell, subOrBody, body, link] = r
+    const label = (titleCell ?? '').trim()
+    const bodyText = (link ? body : subOrBody) ?? ''
+    const href = (link ?? body ?? '').trim()
+    return {
+      iconKey: pickIcon(label),
+      label,
+      body: bodyText.trim(),
+      href: href || undefined,
+    }
+  }).filter(a => a.label)
+  return { blockType: 'audienceGrid', title, audiences }
 }
 
-function toBlogTeasers() {
-  return { blockType: 'blogTeasers', title: 'Read up before you buy', mode: 'auto', count: 3 }
+function toBlogTeasers(sec: Section) {
+  const f = extractFields(sec.body)
+  const title = fieldText(f, 'h2', 'h1') || 'Mortgage answers — written for real people'
+  return { blockType: 'blogTeasers', title, mode: 'auto', count: 3 }
 }
 
 function toBilingual(sec: Section) {
+  const f = extractFields(sec.body)
+  const headline = fieldText(f, 'h2', 'h1') || '¿Hablas español? Hablamos contigo.'
+  const body = fieldMarkdown(f, 'body copy', 'body')
   return {
     blockType: 'bilingual',
-    headline: '¿Hablas español? Hablamos contigo.',
-    body: mdToLexical(sec.body.trim() || 'Toda nuestra atención está disponible en inglés o español — desde la primera llamada hasta el cierre.'),
+    headline,
+    body: body ? mdToLexical(body) : undefined,
   }
 }
 
-function toFinalCta(_sec: Section) {
+function toFinalCta(sec: Section) {
+  const f = extractFields(sec.body)
+  const eyebrow = fieldText(f, 'section tag')
+  const headline = fieldText(f, 'h2', 'h1') || 'Your start of more begins here.'
+  const body = fieldText(f, 'body copy', 'body')
+  const primary = fieldCta(f, 'cta button', 'primary cta', 'submit button')
+  const secondary = fieldCta(f, 'secondary cta')
   return {
     blockType: 'finalCta',
-    eyebrow: 'Ready when you are',
-    headline: 'Your start of more begins here.',
-    body: 'A 15-minute conversation, then a pre-approval inside 24 hours.',
-    primaryCta: { label: 'Book Planning Session', href: '/planning-session' },
-    secondaryCta: { label: 'See loan programs', href: '/loan-programs' },
+    eyebrow,
+    headline,
+    body,
+    primaryCta: primary
+      ? { label: primary.label, href: primary.href }
+      : { label: 'Book Planning Session', href: '/planning-session' },
+    secondaryCta: secondary ? { label: secondary.label, href: secondary.href } : undefined,
   }
 }
 
-/* ---- main mapper ------------------------------------------------------ */
+/* ---- main mapper ---- */
 
 export function mapHomepage(md: string): any[] {
   const all = parseSections(md)
@@ -199,8 +289,6 @@ export function mapHomepage(md: string): any[] {
       sections.push({
         ...all[i],
         heading: m[1].trim(),
-        // Strip authoring-tool metadata lines (e.g., "Maps to: Inviz …")
-        // out of the section body before any block builder runs.
         body: sanitizeMarkdown(all[i].body),
       })
     }
@@ -211,60 +299,26 @@ export function mapHomepage(md: string): any[] {
     const intent = classifyIntent(sec.heading)
     if (intent === 'skip') continue
     switch (intent) {
-      case 'hero': blocks.push(toHero(sec)); break
+      case 'hero': blocks.push(toHero(sec, sections)); break
       case 'whyBroker': blocks.push(toWhyBroker(sec)); break
-      case 'founder': blocks.push(toFounder(sec)); break
+      case 'founder': {
+        const block = toFounder(sec)
+        delete (block as any)._ctaHint
+        blocks.push(block)
+        break
+      }
       case 'loanProgramsList': blocks.push(toLoanProgramsList(sec)); break
-      case 'formEmbed': blocks.push(toFormEmbed()); break
+      case 'formEmbed': blocks.push(toFormEmbed(sec)); break
       case 'audienceGrid': blocks.push(toAudience(sec)); break
-      case 'blogTeasers': blocks.push(toBlogTeasers()); break
+      case 'blogTeasers': blocks.push(toBlogTeasers(sec)); break
       case 'bilingual': blocks.push(toBilingual(sec)); break
       case 'finalCta': blocks.push(toFinalCta(sec)); break
-      case 'testimonials':
-        blocks.push({ blockType: 'testimonials', title: 'What clients say', mode: 'auto' })
-        break
-      case 'faqList':
-        blocks.push({ blockType: 'faqList', title: 'Common questions', mode: 'auto' })
-        break
-      case 'process':
-        blocks.push({
-          blockType: 'process',
-          title: 'How it works',
-          steps: [
-            { number: '01', title: 'Intake', body: '15-minute call about your goals + docs.', durationLabel: '15 min' },
-            { number: '02', title: 'Pre-approval', body: 'Soft credit pull, income docs.', durationLabel: '24 hours' },
-            { number: '03', title: 'Shop loans', body: 'We compare 30+ lenders.', durationLabel: '2-3 days' },
-            { number: '04', title: 'Close', body: 'Title, signing, keys.', durationLabel: '21-30 days' },
-          ],
-        })
-        break
-      case 'guarantee':
-        blocks.push({
-          blockType: 'guarantee',
-          title: 'The START Promise',
-          body: mdToLexical(sec.body.trim() || 'A pre-approval inside 24 hours of complete intake — every time.'),
-          seal: { label: 'START Promise', sub: '24h pre-approval' },
-        })
-        break
-      case 'marquee':
-        blocks.push({ blockType: 'marquee', mode: 'auto', speed: 30 })
-        break
       case 'proofPoints':
-        // Already covered by Hero proofPoints
-        break
-      case 'versusTable':
-        blocks.push({
-          blockType: 'versusTable',
-          title: 'Broker vs. bank',
-          columns: [{ label: 'Broker' }, { label: 'Bank' }],
-          rows: [
-            { label: 'Lender options', values: [{ text: '30+ wholesale' }, { text: '1' }] },
-            { label: 'Rate shopping', values: [{ text: 'Yes' }, { text: 'No' }] },
-            { label: 'Personal service', values: [{ text: 'One person, intake to close' }, { text: 'Hand-offs' }] },
-          ],
-        })
+        // Rolled into Hero proofPoints via the stats table.
         break
       default:
+        // Unknown intent → drop a richText block with the section body so
+        // copy doesn't disappear.
         if (sec.body.trim()) {
           blocks.push({ blockType: 'richText', content: mdToLexical(`## ${sec.heading}\n\n${sec.body}`) })
         }
