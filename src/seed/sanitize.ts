@@ -24,11 +24,16 @@ const FORBIDDEN_HEADING_PATTERNS = [
 ]
 
 const FORBIDDEN_INLINE_PATTERNS = [
+  // Header-style metadata lines from blog posts.
   /^\s*Platform:\s+.*\bWordPress\b.*$/im,
   /^\s*Platform:\s+.*\bElementor\b.*$/im,
   /^\s*SEO:\s+.*\bRankMath\b.*$/im,
   /^\s*Use\s+Elementor.*$/im,
   /^\s*\[?Inviz\s+\w+\s+(?:template|section).*$/im,
+  // 'Maps to: Inviz <Section> — …' lines from homepage / per-page specs.
+  /^\s*\*?Maps to:.*$/gim,
+  // Anything starting with a 'Use Elementor' / 'Use Inviz' instruction.
+  /^\s*Use\s+Inviz\b.*$/gim,
 ]
 
 const FORBIDDEN_WORDS = /\b(?:WordPress|Elementor|RankMath|Yoast|Inviz)\b/gi

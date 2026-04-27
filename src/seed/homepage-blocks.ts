@@ -1,4 +1,5 @@
 import { mdToLexical } from './markdown'
+import { sanitizeMarkdown } from './sanitize'
 
 type Section = { heading: string; body: string; level: number }
 
@@ -195,7 +196,13 @@ export function mapHomepage(md: string): any[] {
     if (all[i].level === 2) break
     if (all[i].level === 3 && SECTION_RE.test(all[i].heading)) {
       const m = all[i].heading.match(SECTION_RE)!
-      sections.push({ ...all[i], heading: m[1].trim() })
+      sections.push({
+        ...all[i],
+        heading: m[1].trim(),
+        // Strip authoring-tool metadata lines (e.g., "Maps to: Inviz …")
+        // out of the section body before any block builder runs.
+        body: sanitizeMarkdown(all[i].body),
+      })
     }
   }
 
