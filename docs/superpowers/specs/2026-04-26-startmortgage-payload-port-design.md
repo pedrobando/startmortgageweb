@@ -298,7 +298,7 @@ Goal: a fully populated CMS on first launch — editors do not start from an emp
 
 ## 13. Out of Scope (v1)
 
-- Redirects plugin / WordPress URL migration map (defer until DNS cutover is planned).
+- Redirects plugin / legacy URL migration map (defer until DNS cutover is planned).
 - Spanish blog posts (none exist in the .zip).
 - Admin role granularity beyond `admin` / `editor`.
 - Multi-tenant or franchise locations.

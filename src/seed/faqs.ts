@@ -4,22 +4,36 @@ import fs from 'node:fs/promises'
 import type { Payload } from 'payload'
 import { mdToLexical } from './markdown'
 
+/**
+ * uploads/faq.md is an authoring spec doc. The real Q/A pairs are
+ * formatted as `**Q1: <question>**` followed by `A: <answer>` blocks.
+ * Everything else (SEO settings, schema markup, layout notes, internal
+ * linking maps) is metadata and must not seed into the FAQs collection.
+ */
+const Q_RE = /^\*\*Q\d+:\s*(.+?)\*\*\s*$/m
+
 export async function seedFAQs(payload: Payload, uploadsDir: string, report: any) {
   const raw = await fs.readFile(path.join(uploadsDir, 'faq.md'), 'utf8').catch(() => '')
   if (!raw) {
     report.skipped.push({ collection: 'faqs', reason: 'faq.md not found' })
     return
   }
-  // Strip the leading H1 + frontmatter then split by H2 headings.
-  const stripped = raw.replace(/^---[\s\S]*?---\s*/m, '').replace(/^#\s+.*\n+/m, '')
-  const sections = stripped.split(/^##\s+/m).slice(1)
+  // Split on horizontal-rule markers between Q/A blocks.
+  const blocks = raw.split(/\n-{3,}\n/)
   let order = 0
-  for (const sec of sections) {
-    const [headLine, ...rest] = sec.split('\n')
-    const question = headLine.trim()
+  for (const blk of blocks) {
+    const qMatch = blk.match(Q_RE)
+    if (!qMatch) continue
+    const question = qMatch[1].trim().replace(/[?]+$/, '?')
     if (!question) continue
-    const answer = rest.join('\n').trim()
+    // Answer = lines after the question, stripping a leading "A:" if present.
+    const idx = blk.indexOf(qMatch[0])
+    const after = blk.slice(idx + qMatch[0].length).trim()
+    const answer = after
+      .replace(/^A:\s*/, '')
+      .trim()
     if (!answer) continue
+
     const existing = await payload.find({
       collection: 'faqs',
       where: { question: { equals: question } },

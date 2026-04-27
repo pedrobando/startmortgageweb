@@ -3,18 +3,16 @@ import { mdToLexical } from './markdown'
 type Section = { heading: string; body: string; level: number }
 
 /**
- * The seeded homepage Markdown is an authoring spec document, not final
- * user-facing copy: it has top-level h2 sections like
- * "RankMath SEO Settings", "Schema Markup (JSON-LD)", "Internal Linking
- * Map", "Elementor Build Notes" — none of those should render as page
- * content. The actual sections live under one specific h2 (in EN:
- * "Elementor Section-by-Section Copy"; in ES: same heading), as h3s
- * named "SECTION N: <intent>" or "SECCION N: <intent>".
+ * uploads/homepage.md and uploads/es-inicio.md are authoring spec docs,
+ * not final user-facing copy. Top-level h2s in those files are SEO /
+ * schema / linking-map sections that must not render. The actual page
+ * content lives under one specific h2 group whose body is a list of h3s
+ * named "SECTION N: <intent>" / "SECCION N: <intent>".
  *
- * The mapper below ONLY consumes those h3s; everything else in the file
- * is treated as authoring metadata and ignored.
+ * The mapper below ONLY consumes those h3s; every other h2 in the file
+ * is treated as authoring metadata and discarded.
  */
-const ELEMENTOR_GROUP = /^elementor\s*section[\s-]*by[\s-]*section\s*copy/i
+const SECTION_GROUP_RE = /section[\s-]*by[\s-]*section/i
 const SECTION_RE = /^(?:section|secci[óo]n)\s*\d+\s*[:\-]\s*(.+)$/i
 
 function parseSections(md: string): Section[] {
@@ -189,7 +187,7 @@ function toFinalCta(_sec: Section) {
 
 export function mapHomepage(md: string): any[] {
   const all = parseSections(md)
-  const startIdx = all.findIndex(s => s.level === 2 && ELEMENTOR_GROUP.test(s.heading))
+  const startIdx = all.findIndex(s => s.level === 2 && SECTION_GROUP_RE.test(s.heading))
   if (startIdx === -1) return []
 
   const sections: Section[] = []

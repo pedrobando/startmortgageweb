@@ -26,23 +26,35 @@ export async function runSeed(opts: Options = {}) {
   }
 
   // force=home — delete existing home pages so the seeder re-creates them
-  // force=all  — delete all seeded pages, posts, loan-programs, faqs, reviews
-  if (opts.force === 'home' || opts.force === 'all') {
-    const where = opts.force === 'home'
-      ? { localizationKey: { equals: 'home' } }
-      : {}
+  // force=faqs — delete existing FAQs (their seed parser changed)
+  // force=pages — delete all pages
+  // force=all  — delete every seeded doc and re-create from scratch
+  const forceHome = opts.force === 'home' || opts.force === 'pages' || opts.force === 'all'
+  const forceFaqs = opts.force === 'faqs' || opts.force === 'all'
+  const forceAllPages = opts.force === 'pages' || opts.force === 'all'
+  const forceAllRest = opts.force === 'all'
+
+  if (forceHome) {
+    const where = forceAllPages ? {} : { localizationKey: { equals: 'home' } }
     const pages = await payload.find({ collection: 'pages', where, limit: 200, pagination: false })
     for (const p of pages.docs as any[]) {
       await payload.delete({ collection: 'pages', id: p.id })
       report.deleted.push({ collection: 'pages', slug: p.slug, locale: p.locale })
     }
   }
-  if (opts.force === 'all') {
-    for (const c of ['posts', 'loan-programs', 'faqs', 'reviews'] as const) {
+  if (forceFaqs) {
+    const docs = await payload.find({ collection: 'faqs', limit: 500, pagination: false })
+    for (const d of docs.docs as any[]) {
+      await payload.delete({ collection: 'faqs', id: d.id })
+      report.deleted.push({ collection: 'faqs', slug: d.question, locale: 'en' })
+    }
+  }
+  if (forceAllRest) {
+    for (const c of ['posts', 'loan-programs', 'reviews'] as const) {
       const docs = await payload.find({ collection: c as any, limit: 500, pagination: false })
       for (const d of docs.docs as any[]) {
         await payload.delete({ collection: c as any, id: d.id })
-        report.deleted.push({ collection: c, slug: d.slug ?? d.question ?? d.authorName, locale: 'en' })
+        report.deleted.push({ collection: c, slug: d.slug ?? d.authorName, locale: 'en' })
       }
     }
   }
