@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 import { cn } from '@/utilities/ui'
-import { Fraunces, Instrument_Sans, DM_Mono } from 'next/font/google'
+import { Hanken_Grotesk, JetBrains_Mono } from 'next/font/google'
 import React from 'react'
 
 import { AdminBar } from '@/components/AdminBar'
@@ -12,27 +12,17 @@ import { draftMode } from 'next/headers'
 import './globals.css'
 import { getServerSideURL } from '@/utilities/getURL'
 
-const fraunces = Fraunces({
+const hanken = Hanken_Grotesk({
   subsets: ['latin'],
-  weight: 'variable',
-  style: ['normal', 'italic'],
-  variable: '--font-fraunces',
-  display: 'swap',
-  axes: ['SOFT', 'opsz'],
-})
-
-const instrumentSans = Instrument_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  style: ['normal', 'italic'],
-  variable: '--font-instrument-sans',
+  weight: ['300', '400', '500', '600', '700', '800'],
+  variable: '--font-hanken',
   display: 'swap',
 })
 
-const dmMono = DM_Mono({
+const jbMono = JetBrains_Mono({
   subsets: ['latin'],
   weight: ['400', '500'],
-  variable: '--font-dm-mono',
+  variable: '--font-jb-mono',
   display: 'swap',
 })
 
@@ -41,7 +31,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html
-      className={cn(fraunces.variable, instrumentSans.variable, dmMono.variable)}
+      className={cn(hanken.variable, jbMono.variable)}
       lang="en"
       suppressHydrationWarning
     >
@@ -65,7 +55,5 @@ export const metadata: Metadata = {
   description:
     'Boutique bilingual mortgage guidance for Central Florida families. 24-hour pre-approvals, 30+ wholesale lenders, one person from intake to keys.',
   openGraph: mergeOpenGraph(),
-  twitter: {
-    card: 'summary_large_image',
-  },
+  twitter: { card: 'summary_large_image' },
 }

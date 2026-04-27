@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { draftMode } from 'next/headers'
 import { RichText } from '@payloadcms/richtext-lexical/react'
+import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { isLocale } from '@/lib/locale'
 import { payloadClient } from '@/lib/payload'
 import { JsonLd } from '@/components/seo/JsonLd'
@@ -35,31 +36,53 @@ export default async function PostPage({
   return (
     <>
       <JsonLd data={{ '@context': 'https://schema.org', ...buildArticle(origin, locale, post) }} />
-      <article className="container py-20 md:py-28">
+      <article className="container py-16 md:py-24">
         <div className="mx-auto max-w-3xl">
-          <div className="kicker kicker--leaf">
-            <Link href={`/${locale}`} className="link-underline">Journal</Link>
-            {date && <span className="ml-3 text-[var(--color-ink-mute)]">— {date}</span>}
-          </div>
-          <h1
-            className="mt-8 font-display leading-[1.05] tracking-[-0.02em] text-[clamp(2.4rem,5.5vw,4.5rem)]"
-            style={{ fontWeight: 400 }}
+          <Link
+            href={`/${locale}`}
+            className="inline-flex items-center gap-1.5 text-[0.88rem] font-medium text-[var(--color-ink-mute)] transition-colors hover:text-[var(--color-ink)]"
           >
+            <ArrowLeft className="h-3.5 w-3.5" strokeWidth={2} />
+            All articles
+          </Link>
+          <div className="mt-8 flex items-center gap-3 text-[0.85rem]">
+            <span className="rounded-full bg-[var(--color-leaf-tint)] px-3 py-1 font-semibold uppercase tracking-[0.05em] text-[var(--color-leaf-deep)]">
+              Article
+            </span>
+            {date && <span className="text-[var(--color-ink-mute)]">{date}</span>}
+          </div>
+          <h1 className="mt-6 text-[clamp(2.4rem,5vw,4rem)] font-bold leading-[1.05] tracking-[-0.03em]">
             {post.title}
           </h1>
           {post.meta?.description && (
-            <p className="mt-6 font-display italic text-[1.25rem] leading-[1.5] text-[var(--color-ink-soft)]">
+            <p className="mt-5 text-[1.2rem] leading-[1.55] text-[var(--color-ink-soft)]">
               {post.meta.description}
             </p>
           )}
-          <hr className="rule mt-10" />
-          <div className="mt-10 prose prose-neutral max-w-none font-sans text-[1.08rem] leading-[1.8] text-[var(--color-ink-soft)] [&_p]:mb-5 [&_strong]:text-[var(--color-ink)] [&_h2]:font-display [&_h2]:font-medium [&_h2]:tracking-[-0.01em] [&_h2]:text-[var(--color-ink)] [&_h2]:text-[1.8rem] [&_h2]:mt-12 [&_h2]:mb-4 [&_h3]:font-display [&_h3]:font-medium [&_h3]:text-[1.3rem] [&_h3]:mt-8 [&_h3]:mb-3 [&_a]:text-[var(--color-leaf-deep)] [&_a:hover]:underline [&_blockquote]:border-l-4 [&_blockquote]:border-[var(--color-leaf-deep)] [&_blockquote]:pl-6 [&_blockquote]:font-display [&_blockquote]:italic [&_blockquote]:text-[1.25rem] [&_ul]:my-5 [&_ul]:pl-6 [&_li]:mb-2">
+          <hr className="mt-10 border-[var(--color-line)]" />
+          <div className="mt-10 prose prose-neutral max-w-none text-[1.06rem] leading-[1.75] text-[var(--color-ink-soft)] [&_p]:mb-5 [&_strong]:text-[var(--color-ink)] [&_h2]:font-display [&_h2]:font-semibold [&_h2]:tracking-[-0.02em] [&_h2]:text-[var(--color-ink)] [&_h2]:text-[1.7rem] [&_h2]:mt-12 [&_h2]:mb-4 [&_h3]:font-display [&_h3]:font-semibold [&_h3]:text-[1.25rem] [&_h3]:mt-8 [&_h3]:mb-3 [&_h3]:text-[var(--color-ink)] [&_a]:text-[var(--color-leaf-deep)] [&_a:hover]:underline [&_blockquote]:border-l-4 [&_blockquote]:border-[var(--color-leaf)] [&_blockquote]:pl-5 [&_blockquote]:font-medium [&_blockquote]:text-[var(--color-ink)] [&_ul]:my-5 [&_ul]:pl-6 [&_li]:mb-2">
             <RichText data={post.content as any} />
           </div>
-          <hr className="rule mt-16" />
-          <div className="mt-10 flex items-baseline justify-between font-mono text-[0.7rem] uppercase tracking-[0.15em] text-[var(--color-ink-mute)]">
-            <Link href={`/${locale}`} className="link-underline">← Back to home</Link>
-            <span className="text-[var(--color-leaf-deep)]">★ End of article</span>
+
+          <div className="mt-16 rounded-2xl bg-[var(--color-canvas-soft)] p-8 md:p-10">
+            <div className="text-[0.78rem] font-semibold uppercase tracking-[0.06em] text-[var(--color-leaf-deep)]">
+              Ready to start?
+            </div>
+            <h2 className="mt-2 text-[1.6rem] font-bold tracking-[-0.02em]">
+              Get a pre-approval inside 24 hours.
+            </h2>
+            <div className="mt-6 flex flex-wrap items-center gap-4">
+              <Link href={`/${locale}/planning-session`} className="btn-primary">
+                Book a session
+                <ArrowRight className="h-4 w-4" strokeWidth={2} />
+              </Link>
+              <Link
+                href={`/${locale}/pre-approval`}
+                className="btn-text"
+              >
+                Pre-approval <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
+              </Link>
+            </div>
           </div>
         </div>
       </article>

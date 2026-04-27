@@ -38,24 +38,24 @@ export function FormSubmitter({ form }: { form: FormDoc | null | undefined }) {
 
   if (state === 'ok') {
     return (
-      <div className="border-l-2 border-[var(--color-leaf)] bg-[var(--color-leaf-tint)] px-6 py-7">
-        <div className="font-mono text-[0.7rem] uppercase tracking-[0.15em] text-[var(--color-leaf-deep)]">
+      <div className="rounded-xl border border-[var(--color-leaf)] bg-[var(--color-leaf-tint)] px-6 py-7">
+        <div className="text-[0.78rem] font-semibold uppercase tracking-[0.06em] text-[var(--color-leaf-deep)]">
           ★ Received
         </div>
-        <p className="mt-3 font-display italic text-[1.3rem] leading-[1.4] text-[var(--color-ink)]">
-          Thanks — we&rsquo;ll reach out within 24 hours.
+        <p className="mt-2 text-[1.05rem] font-medium leading-[1.4] text-[var(--color-ink)]">
+          Thanks &mdash; we&rsquo;ll reach out within 24 hours.
         </p>
       </div>
     )
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-7">
+    <form onSubmit={onSubmit} className="space-y-5">
       {(form.fields ?? []).map((f: any) => {
         const required = !!f.required
         return (
           <div key={f.id ?? f.name}>
-            <label htmlFor={f.name} className="kicker block">
+            <label htmlFor={f.name} className="field-label">
               {f.label}
               {required && <span className="ml-1 text-[var(--color-coral)]">*</span>}
             </label>
@@ -65,7 +65,7 @@ export function FormSubmitter({ form }: { form: FormDoc | null | undefined }) {
                 name={f.name}
                 required={required}
                 rows={4}
-                className="field-line resize-none"
+                className="field-input resize-none"
               />
             ) : f.blockType === 'select' ? (
               <select
@@ -73,7 +73,7 @@ export function FormSubmitter({ form }: { form: FormDoc | null | undefined }) {
                 name={f.name}
                 required={required}
                 defaultValue=""
-                className="field-line cursor-pointer"
+                className="field-input cursor-pointer"
               >
                 <option value="">Choose one</option>
                 {(f.options ?? []).map((o: any) => (
@@ -86,25 +86,31 @@ export function FormSubmitter({ form }: { form: FormDoc | null | undefined }) {
                 name={f.name}
                 type={f.blockType === 'email' ? 'email' : f.blockType === 'number' ? 'number' : 'text'}
                 required={required}
-                className="field-line"
+                className="field-input"
               />
             )}
           </div>
         )
       })}
-      <div className="pt-4">
-        <button
-          type="submit"
-          disabled={state === 'submitting'}
-          className="action-link disabled:opacity-50"
-        >
-          {state === 'submitting' ? 'Sending…' : (form.submitButtonLabel ?? 'Send')}
-        </button>
-      </div>
+      <button
+        type="submit"
+        disabled={state === 'submitting'}
+        className="btn-primary w-full justify-center disabled:opacity-50"
+      >
+        {state === 'submitting' ? 'Sending…' : (form.submitButtonLabel ?? 'Send')}
+        <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden>
+          <path
+            d="M3 8h10M9 4l4 4-4 4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
       {error && (
-        <div className="font-mono text-[0.7rem] uppercase tracking-[0.12em] text-[var(--color-coral)]">
-          ★ {error}
-        </div>
+        <div className="text-[0.85rem] text-[var(--color-coral)]">★ {error}</div>
       )}
     </form>
   )
