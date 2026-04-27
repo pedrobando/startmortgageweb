@@ -20,7 +20,11 @@
 
 import { sanitizeMarkdown } from './sanitize'
 
-const FIELD_LABEL_RE = /^\*\*([^*]+?):\s*\*\*\s*$/
+// Two label formats coexist in the corpus:
+//   "**Body Copy:**\nThe big banks ..."   (label on its own line)
+//   "**H3:** Bilingual From Day One"      (label + value on one line)
+const FIELD_LABEL_LINE_RE = /^\*\*([^*]+?):\s*\*\*\s*$/
+const FIELD_LABEL_INLINE_RE = /^\*\*([^*]+?):\s*\*\*\s+(.+)$/
 
 /** A label like "**H1 (Heading):**" or "**Body Copy:**". Strips parentheticals. */
 function normalizeLabel(raw: string): string {
@@ -29,7 +33,8 @@ function normalizeLabel(raw: string): string {
 
 /**
  * Returns the section body split into a map of `label → array of lines`.
- * Lines under one label accumulate until the next label is seen.
+ * Lines under a separate-line label accumulate until the next label;
+ * an inline `**Label:** value` line stores the value as a single entry.
  */
 export function extractFields(body: string): Record<string, string[]> {
   const out: Record<string, string[]> = {}
@@ -37,9 +42,20 @@ export function extractFields(body: string): Record<string, string[]> {
   const lines = cleaned.split('\n')
   let current: string | null = null
   for (const ln of lines) {
-    const m = FIELD_LABEL_RE.exec(ln.trim())
-    if (m) {
-      current = normalizeLabel(m[1])
+    const trimmed = ln.trim()
+    const inline = FIELD_LABEL_INLINE_RE.exec(trimmed)
+    if (inline) {
+      const label = normalizeLabel(inline[1])
+      if (!out[label]) out[label] = []
+      out[label].push(inline[2])
+      // Inline values do NOT open a continuation — the next line either
+      // starts a new label or is body text we should ignore for that field.
+      current = null
+      continue
+    }
+    const labelOnly = FIELD_LABEL_LINE_RE.exec(trimmed)
+    if (labelOnly) {
+      current = normalizeLabel(labelOnly[1])
       if (!out[current]) out[current] = []
       continue
     }
