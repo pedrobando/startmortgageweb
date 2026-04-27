@@ -37,7 +37,25 @@ const MAPPING: Mapping[] = [
 
 function extractTitle(md: string, fallback: string): string {
   const m = md.match(/^#\s+(.*)/m)
-  return (m ? m[1].trim() : fallback).slice(0, 200)
+  if (!m) return slugToTitle(fallback)
+  // Prefer the first segment before an em/en dash — H1s in this corpus
+  // typically read "Real Title — start-mortgage.com" or
+  // "Real Title — Inviz Template Copy-Paste Guide", so the part before
+  // the dash is the user-facing title.
+  const head = m[1].split(/\s[—–-]\s/)[0].trim()
+  // Drop a leading "Blog Post:" / "Page:" prefix if present.
+  const stripped = head.replace(/^(?:Blog\s+Post|Page|Article)\s*:\s*/i, '')
+  if (!stripped || /\b(?:wordpress|elementor|rankmath|yoast|inviz)\b/i.test(stripped)) {
+    return slugToTitle(fallback)
+  }
+  return stripped.slice(0, 200)
+}
+
+function slugToTitle(slug: string): string {
+  return slug
+    .split(/[-_]/)
+    .map(w => (w[0]?.toUpperCase() ?? '') + w.slice(1))
+    .join(' ')
 }
 
 export async function seedPages(payload: Payload, uploadsDir: string, report: any) {
@@ -61,6 +79,10 @@ export async function seedPages(payload: Payload, uploadsDir: string, report: an
     }
     const { content, data: fm } = matter(raw)
     const title = (fm.title as string) || extractTitle(content, m.slug)
+    // If frontmatter title is contaminated, fall back to a clean derivation.
+    const cleanTitle = /\b(?:wordpress|elementor|rankmath|yoast|inviz)\b/i.test(title)
+      ? extractTitle('', m.slug)
+      : title
     let layout: any[]
     if (m.isHome) {
       // mapHomepage already filters down to the body-section group.
@@ -91,7 +113,7 @@ export async function seedPages(payload: Payload, uploadsDir: string, report: an
     await payload.create({
       collection: 'pages',
       data: {
-        title,
+        title: cleanTitle,
         slug: m.slug,
         locale: m.locale,
         localizationKey: m.localizationKey,

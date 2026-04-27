@@ -15,8 +15,18 @@ const POSTS = [
 ]
 
 function extractTitle(md: string, fallback: string): string {
-  const m = md.match(/^#\s+(.*)/m)
-  return (m ? m[1].trim() : fallback).slice(0, 200)
+  const matches = [...md.matchAll(/^#\s+(.*)/gm)]
+  for (const m of matches) {
+    const head = m[1].split(/\s[—–-]\s/)[0].trim()
+    const stripped = head.replace(/^(?:Blog\s+Post|Article)\s*:\s*/i, '')
+    if (stripped && !/\b(?:wordpress|elementor|rankmath|yoast|inviz)\b/i.test(stripped)) {
+      return stripped.slice(0, 200)
+    }
+  }
+  return fallback
+    .split(/[-_]/)
+    .map(w => (w[0]?.toUpperCase() ?? '') + w.slice(1))
+    .join(' ')
 }
 
 export async function seedPosts(payload: Payload, uploadsDir: string, report: any) {
