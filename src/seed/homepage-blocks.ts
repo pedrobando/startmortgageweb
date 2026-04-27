@@ -135,19 +135,25 @@ function toWhyBroker(sec: Section) {
   }
 }
 
-function pickIcon(name: string): string {
+// whyBroker's Block schema constrains iconKey to a fixed enum.
+const WHY_ICONS = [
+  'scale', 'wallet', 'clock', 'users', 'search', 'shield-check',
+  'badge-check', 'sparkles', 'handshake', 'chart', 'headphones', 'globe',
+] as const
+type WhyIcon = typeof WHY_ICONS[number]
+
+function pickIcon(name: string): WhyIcon {
   const n = (name || '').toLowerCase()
-  if (/chat|biling|globe|language/.test(n)) return 'globe'
-  if (/shield|check|badge/.test(n)) return 'shield-check'
-  if (/clock|communica/.test(n)) return 'clock'
-  if (/scale|rate|shop/.test(n)) return 'scale'
-  if (/wallet|money|cost/.test(n)) return 'wallet'
+  if (/chat|biling|globe|language|idioma/.test(n)) return 'globe'
+  if (/shield|check|trust|approve/.test(n)) return 'shield-check'
+  if (/clock|communica|time|update/.test(n)) return 'clock'
+  if (/scale|rate|shop|compare/.test(n)) return 'scale'
+  if (/wallet|money|cost|saving/.test(n)) return 'wallet'
   if (/handshake|partner/.test(n)) return 'handshake'
-  if (/heart|family/.test(n)) return 'heart'
-  if (/home|house/.test(n)) return 'home'
-  if (/flag|veteran|military/.test(n)) return 'flag'
-  if (/briefcase|work|self/.test(n)) return 'briefcase'
-  if (/users|people|team/.test(n)) return 'users'
+  if (/users|people|team|family/.test(n)) return 'users'
+  if (/search|research/.test(n)) return 'search'
+  if (/chart|stat|track/.test(n)) return 'chart'
+  if (/headphone|support|help/.test(n)) return 'headphones'
   if (/sparkle|star/.test(n)) return 'sparkles'
   return 'badge-check'
 }
@@ -205,6 +211,22 @@ function toFormEmbed(sec: Section) {
   }
 }
 
+// audienceGrid's Block schema constrains iconKey to a fixed enum.
+const AUDIENCE_ICONS = ['home', 'users', 'briefcase', 'heart', 'globe', 'flag', 'wallet', 'sparkles'] as const
+type AudienceIcon = typeof AUDIENCE_ICONS[number]
+
+function pickAudienceIcon(label: string): AudienceIcon {
+  const n = label.toLowerCase()
+  if (/first[-\s]?time|home|family|familias|hogar/.test(n)) return 'home'
+  if (/refinanc|wallet|money|saving|ahorr/.test(n)) return 'wallet'
+  if (/self[-\s]?employed|business|owner|emprende|negocio/.test(n)) return 'briefcase'
+  if (/veteran|military|service|militar/.test(n)) return 'flag'
+  if (/realtor|partner|agent|socio|agente/.test(n)) return 'users'
+  if (/heart|love|family/.test(n)) return 'heart'
+  if (/globe|biling|spanish|english|idioma/.test(n)) return 'globe'
+  return 'sparkles'
+}
+
 function toAudience(sec: Section) {
   const t = parseTable(sec.body)
   if (!t || !t.rows.length) {
@@ -229,7 +251,7 @@ function toAudience(sec: Section) {
     const bodyText = (link ? body : subOrBody) ?? ''
     const href = (link ?? body ?? '').trim()
     return {
-      iconKey: pickIcon(label),
+      iconKey: pickAudienceIcon(label),
       label,
       body: bodyText.trim(),
       href: href || undefined,
