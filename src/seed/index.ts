@@ -35,8 +35,9 @@ export async function runSeed(opts: Options = {}) {
   const forceAllRest = opts.force === 'all'
 
   if (forceHome) {
-    const where = forceAllPages ? {} : { localizationKey: { equals: 'home' } }
-    const pages = await payload.find({ collection: 'pages', where, limit: 200, pagination: false })
+    const args: any = { collection: 'pages', limit: 200, pagination: false }
+    if (!forceAllPages) args.where = { localizationKey: { equals: 'home' } }
+    const pages = await payload.find(args)
     for (const p of pages.docs as any[]) {
       await payload.delete({ collection: 'pages', id: p.id })
       report.deleted.push({ collection: 'pages', slug: p.slug, locale: p.locale })
